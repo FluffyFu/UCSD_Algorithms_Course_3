@@ -1,0 +1,19 @@
+*.pyc
+*.DS_Store
+.hypothesis/
+.ropeproject/
+.vim/
+
+# ignore other types of starter files except python.
+
+*.cpp
+*.cs
+*.hs
+*.java
+*.js
+*.kt
+*.rb
+*.rs
+*.scala
+# profiling results
+*.cprof
