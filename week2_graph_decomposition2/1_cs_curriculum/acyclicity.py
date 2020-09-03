@@ -1,10 +1,44 @@
-#Uses python3
+# Uses python3
 
+from typing import List, Set
 import sys
 
 
 def acyclic(adj):
-    return 0
+    graph = Graph(adj)
+    has_cycle = graph.has_cycle()
+
+    return 1 if has_cycle else 0
+
+
+class Graph:
+    """
+    Object to store the graph and perform operation on the graph.
+    """
+
+    def __init__(self, adj: List[List[int]]):
+        self._adj = adj
+        self._on_stack = set()
+        self._to_visit = {i for i in range(len(adj))}
+
+    def _has_cycle(self, x: int) -> bool:
+        self._on_stack.add(x)
+        for v in self._adj[x]:
+            if v in self._to_visit:
+                self._to_visit.remove(v)
+                self._has_cycle(v)
+            elif v in self._on_stack:
+                return True
+        self._on_stack.remove(x)
+        return False
+
+    def has_cycle(self):
+        res = False
+        while len(self._to_visit) > 0:
+            x = self._to_visit.pop()
+            res = self._has_cycle(x)
+        return res
+
 
 if __name__ == '__main__':
     input = sys.stdin.read()
