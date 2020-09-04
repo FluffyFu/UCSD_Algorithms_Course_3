@@ -20,24 +20,33 @@ class Graph:
         self._adj = adj
         self._on_stack = set()
         self._to_visit = {i for i in range(len(adj))}
+        self._cycle = False
 
-    def _has_cycle(self, x: int) -> bool:
+    def _has_cycle(self, x: int) -> None:
+        """
+        Internal function to test if there is a circle from node x.
+        """
         self._on_stack.add(x)
         for v in self._adj[x]:
-            if v in self._to_visit:
+            if self._cycle:
+                return
+            elif v in self._to_visit:
                 self._to_visit.remove(v)
                 self._has_cycle(v)
             elif v in self._on_stack:
-                return True
+                self._cycle = True
         self._on_stack.remove(x)
-        return False
 
     def has_cycle(self):
-        res = False
+        """
+        Check if the whole graph contains a circle.
+        """
         while len(self._to_visit) > 0:
+            if self._cycle:
+                return True
             x = self._to_visit.pop()
-            res = self._has_cycle(x)
-        return res
+            self._has_cycle(x)
+        return False
 
 
 if __name__ == '__main__':
