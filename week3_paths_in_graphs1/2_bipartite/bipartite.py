@@ -24,7 +24,7 @@ class Graph:
 
     def __init__(self, adj: List[List[int]]):
         self._adj = self._preprocess_adj(adj)
-        self._colors = [None for i in range(len(adj))]
+        self._colors = [False for i in range(len(adj))]
         self._visited = set()
         self._is_bipartite = True
 
@@ -53,8 +53,6 @@ class Graph:
     def is_bipartite(self):
         for s in range(len(self._adj)):
             if not s in self._visited:
-                # arbitrarily label the color of the first node in each CC.
-                self._colors[s] = True
                 self._dfs(s)
 
         return self._is_bipartite
@@ -112,4 +110,4 @@ if __name__ == '__main__':
     for (a, b) in edges:
         adj[a - 1].append(b - 1)
         adj[b - 1].append(a - 1)
-    print(bipartite_bfs(adj))
+    print(bipartite(adj))
