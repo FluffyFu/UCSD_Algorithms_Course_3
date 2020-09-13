@@ -2,11 +2,12 @@
 
 import sys
 import queue
+from typing import List, Tuple
 
 
-def shortet_paths(adj, cost, s, distance, reachable, shortest):
-    # write your code here
-    pass
+def shortest_paths(adj, cost, s):
+    sp = ShortestPath(adj, cost, s)
+    return sp.reformat_results()
 
 
 class ShortestPath:
@@ -19,12 +20,13 @@ class ShortestPath:
         3. reachable from s and there is no negative circle.
 
     The implementation steps are as follows:
-        1. run dfs from s and find out those that are not reachable from s.
-        2. run Bellman-Ford and store all the vertices that has been relaxed on the V-th pass.
-           These vertices does not have a shorted path from s.
+        1. run Bellman-Ford and store all the vertices that has been relaxed on the V-th pass.
+           These vertices does not have a shorted path from s. Note that this is not a complete
+           list. We need to perform bfs to collect all of them.
+        2. Those nodes still with inf distance are not reachable from s.
         3. The rest of vertices has shortest path from s and dst[s] stores the distance.
     """
-    INFINITY = int(10E16)
+    INFINITY = float('inf')
 
     def __init__(self, adj, cost, s):
         self._adj = adj
@@ -33,28 +35,11 @@ class ShortestPath:
         self._not_reachable = None
         self._s = s
 
-    @property
-    def not_reachable(self):
-        if self._not_reachable != None:
-            return self._not_reachable
-        else:
-            self._not_reachable = self._generate_not_reachable()
-            return self._not_reachable
-
-    def _generate_not_reachable(self):
-        """
-        Internal method to generate a set of vertices this not reachable from the source.
-        """
-        visited = set()
-        self._dfs(self._s, visited)
-
-        return {i for i in range(self._n_v)} - visited
-
     def _dfs(self, s, visited):
         visited.add(s)
         for v in self._adj[s]:
             if not v in visited:
-                self._dfs(s, visited)
+                self._dfs(v, visited)
 
     def _bellman_ford(self):
         dst = [self.INFINITY for _ in range(self._n_v)]
@@ -65,15 +50,66 @@ class ShortestPath:
                 for i, w in enumerate(neighbors):
                     if dst[w] > dst[v] + self._cost[v][i]:
                         dst[w] = dst[v] + self._cost[v][i]
+                        # node_to[w] = v
 
-        no_sp = set()
+        no_sp_seed = set()
 
+        # Find the nodes that are part of the negative cycle.
+        # NOTE: this is no a complete list of cycle. Depending
+        # on the edge relax order, some of the nodes in the negative
+        # cycle may not get relaxed in one pass, it'll get relaxed in
+        # the following pass though.
         for v, neighbors in enumerate(self._adj):
             for i, w in enumerate(neighbors):
                 if dst[w] > dst[v] + self._cost[v][i]:
-                    no_sp.add(w)
+                    dst[w] = dst[v] + self._cost[v][i]
+                    no_sp_seed.add(w)
+
+        no_sp = set()
+        q = queue.Queue()
+
+        # Perform bfs to find all the nodes that does not have
+        # a shortest path.
+        while len(no_sp_seed) > 0:
+            s = no_sp_seed.pop()
+            if not s in no_sp:
+                q.put(s)
+                while not q.empty():
+                    v = q.get()
+                    no_sp.add(v)
+                    for w in self._adj[v]:
+                        if not w in no_sp:
+                            q.put(w)
 
         return no_sp, dst
+
+    def reformat_results(self):
+        """
+        Internal method to format the results for each node.
+        If the node is not reachable from s, represent it with '*'.
+        If the node has a path from s, but there's no shortest path, represent it with '-'.
+        Otherwise, represent with the shortest distance.
+        """
+        np_sp, dst = self._bellman_ford()
+        for i in np_sp:
+            dst[i] = '-'
+
+        for i in range(len(dst)):
+            if dst[i] == float('inf'):
+                dst[i] = '*'
+
+        return dst
+
+
+def generate_adj_cost(n_v: int, edges: List[List[int]]) -> Tuple[List[List[int]], List[List[int]]]:
+    adj = [[] for _ in range(n_v)]
+    cost = [[] for _ in range(n_v)]
+
+    for a, b, w in edges:
+        adj[a-1].append(b-1)
+        cost[a-1].append(w)
+
+    return adj, cost
 
 
 if __name__ == '__main__':
@@ -91,15 +127,6 @@ if __name__ == '__main__':
         cost[a - 1].append(w)
     s = data[0]
     s -= 1
-    distance = [10**19] * n
-    reachable = [0] * n
-    shortest = [1] * n
-    shortet_paths(adj, cost, s, distance, reachable, shortest)
+    dist = shortest_paths(adj, cost, s)
     for x in range(n):
-        if reachable[x] == 0:
-            print('*')
-        elif shortest[x] == 0:
-            print('-')
-        else:
-            print(distance[x])
-
+        print(dist[x])
